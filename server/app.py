@@ -16,7 +16,6 @@ db.init_app(app)
 
 api = Api(app)
 
-
 class Plants(Resource):
 
     def get(self):
@@ -24,6 +23,7 @@ class Plants(Resource):
         return make_response(jsonify(plants), 200)
 
     def post(self):
+
         data = request.get_json()
 
         new_plant = Plant(
@@ -37,19 +37,45 @@ class Plants(Resource):
 
         return make_response(new_plant.to_dict(), 201)
 
-
 api.add_resource(Plants, '/plants')
-
 
 class PlantByID(Resource):
 
     def get(self, id):
         plant = Plant.query.filter_by(id=id).first().to_dict()
         return make_response(jsonify(plant), 200)
+    
+    def patch(self, id):
+        patch_plant = Plant.query.filter_by(id=id).first()
+        
+        data = request.get_json()
+        for attr in data:
+            setattr(patch_plant, attr, data[attr])
+        
+        db.session.add(patch_plant)
+        db.session.commit()
+        
+        patch_plant_dict = patch_plant.to_dict()
+        response = make_response(patch_plant_dict, 200)
+        return response
+        
 
+    def delete(self, id):
+        deleted_plant = Plant.query.filter_by(id=id).first()
+        
+        db.session.delete(deleted_plant)
+        db.session.commit()
+        
+        deleted_plant_dict = {
+            "message": "Plant has been successfully deleted."
+        }
+        
+        response = make_response(deleted_plant_dict, 204)
+        return response
+        
 
 api.add_resource(PlantByID, '/plants/<int:id>')
-
+        
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
